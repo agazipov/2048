@@ -8,7 +8,7 @@ export class Field {
     columns: Cell[][];
     animationActivated: boolean;
     direction: TDirection;
-    speed: number = 3;
+    speed: number = 7;
 
     constructor() {
         // this.field = mock;
@@ -38,8 +38,18 @@ export class Field {
             num2 = Math.floor(Math.random() * arr.length);
         } while (num1 === num2);
 
-        arr[0].value = 2;
-        arr[1].value = 2;
+        arr[num1].value = 2;
+        arr[num1].animationValue = 2;
+        arr[num2].value = 8;
+        arr[num2].animationValue = 8;
+        // arr[0].value = 2;
+        // arr[0].animationValue = 2;
+        // arr[1].value = 2;
+        // arr[1].animationValue = 2;
+        // arr[2].value = 4;
+        // arr[2].animationValue = 4;
+        // arr[3].value = 4;
+        // arr[3].animationValue = 4;
 
         return arr;
     }
@@ -58,12 +68,10 @@ export class Field {
 
     private addRandomValues() {
         const emptyCells = this.field.filter(cell => cell.value === 0);
-        this.field.forEach(cell => cell.isNewCell = false);
         if (emptyCells.length > 0) {
             const randomIndex = Math.floor(Math.random() * emptyCells.length);
             const randomValue = Math.random() < 0.9 ? 2 : 4; // 90% вероятность 2, 10% вероятность 4
             emptyCells[randomIndex].value = randomValue;
-            emptyCells[randomIndex].isNewCell = true;
         }
     }
 
@@ -86,11 +94,11 @@ export class Field {
                 break;
         }
         this.startAnimationField();
-        // this.addRandomValues();
+        this.addRandomValues();
     }
 
 
-    private shiftLogic(arr: Cell[], direction: TDirection) {       
+    private shiftLogic(arr: Cell[], direction: TDirection) {
         const isPlus = direction === 'right' || direction === 'down';
         const start = isPlus ? 0 : arr.length - 1;
         const end = isPlus ? arr.length : -1;
@@ -98,7 +106,11 @@ export class Field {
 
         // Три цикла для обхода значений для поля из 4х клеток
         // Первый проход для объединения клеток
-        // Объеденям клетки только на перввой итерации согласно логики игры
+        // Объеденяем клетки только на первой итерации согласно
+        let arrayOfСhangingСells: Cell[] = [];
+        let amplitudeOfChange = 0;
+        let indexOfCellCanged = 0;
+        let isChangeCell = true;
         for (let i = start; i !== end; i += step) {
             let next = i + step;
 
@@ -107,19 +119,34 @@ export class Field {
             if (arr[next].value === 0) {
                 arr[next].value = arr[i].value;
                 arr[i].value = 0;
-                arr[i].amplitudeX = arr[next].x;
-                arr[i].amplitudeY = arr[next].y;
-                arr[i].isAnimating = true;
-                console.log(`клетка ${arr[i].id} сместилась ${direction} с позиции ${arr[i].x} ${arr[i].y} на позицию ${arr[next].x} ${arr[next].y}`);
-            } else if (arr[i].value === arr[next].value) {
+                if (isChangeCell) {
+                    isChangeCell = false;
+                    indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+                }
+                if (arrayOfСhangingСells[indexOfCellCanged]) {
+                    arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
+                }
+            } else if (arr[i].value === arr[next].value && arr[i].isMerging) {
                 arr[next].value *= 2;
                 arr[i].value = 0;
-                arr[i].amplitudeX = arr[next].x;
-                arr[i].amplitudeY = arr[next].y;
-                arr[i].isAnimating = true;
-                console.log(`клетка ${arr[i].id} слилась`);
+                if (isChangeCell) {
+                    isChangeCell = false;
+                    indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+                }
+                if (arrayOfСhangingСells[indexOfCellCanged]) {
+                    arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
+                } arr[next].isMerging = false; // мержим только раз за ход
+            } else {
+                // вышедший из итрецаии перемещения объект из-за различных значений с соседним
+                isChangeCell = true;
+                amplitudeOfChange = 0;
             }
         }
+        if (indexOfCellCanged < 2) { // при добавлении в первой итерации менее двух изменяемых клеток
+            isChangeCell = true;
+            amplitudeOfChange = 0;
+        }
+        indexOfCellCanged = 0;
 
         // Второй проход для сдвига клеток
         for (let i = start; i !== end; i += step) {
@@ -129,12 +156,21 @@ export class Field {
             if (arr[next].value === 0) {
                 arr[next].value = arr[i].value;
                 arr[i].value = 0;
-                arr[i].amplitudeX = arr[next].x;
-                arr[i].amplitudeY = arr[next].y;
-                arr[i].isAnimating = true;
-                console.log(`клетка ${arr[i].id} сместилась  ${direction}`);
+                if (isChangeCell) {
+                    isChangeCell = false;
+                    indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+                }
+                if (arrayOfСhangingСells[indexOfCellCanged]) {
+                    arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
+                }
+            } else {
+                // вышедший из итрецаии слияниия объект из-за различных значений с соседним
+                isChangeCell = true;
+                ++indexOfCellCanged;
+                amplitudeOfChange = 0;
             }
         }
+        indexOfCellCanged = 0;
 
         // Третий проход для сдвига клеток (когда в ряду 3 разных значения)
         for (let i = start; i !== end; i += step) {
@@ -144,26 +180,30 @@ export class Field {
             if (arr[next].value === 0) {
                 arr[next].value = arr[i].value;
                 arr[i].value = 0;
-                arr[i].amplitudeX = arr[next].x;
-                arr[i].amplitudeY = arr[next].y;
-                arr[i].isAnimating = true;
-                console.log(`клетка ${arr[i].id} сместилась  ${direction}`);
+                if (isChangeCell) {
+                    isChangeCell = false;
+                    indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+                }
+                if (arrayOfСhangingСells[indexOfCellCanged]) {
+                    arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
+                }
+            } else {
+                // вышедший из итрецаии слияниия объект из-за различных значений с соседним
+                isChangeCell = true;
+                ++indexOfCellCanged;
+                amplitudeOfChange = 0;
             }
         }
+        arrayOfСhangingСells.forEach(cell => cell.isAnimating = true)
     }
-
 
     startAnimationField() {
         // нужен для запуска рендера usetick. при запуске активирует у клеток анимацию
         if (this.animationActivated) return;
-        // this.direction = direction;
-        // !this.animationActivated && this.field.forEach(cell => cell.value !== 0 && cell.startAnimationCell());
         this.animationActivated = true;
     }
 
     animation(delta: number) {
-        console.log('tick');
-        
         // вызываем анимацию для клеток
         // !здесь массив с клетками для анимации (в котором должны содераться данные о предстоящем изменении)
         this.field.forEach(cell => cell.isAnimating && cell.cellAnimation(delta, this.direction, this.speed));
@@ -171,7 +211,12 @@ export class Field {
         if (this.field.every(cell => !cell.isAnimating)) {
             this.animationActivated = false;
             // возвращает клетки в дефолтное значение
-            this.field.forEach(cell => { cell.offsetX = 0; cell.offsetY = 0 });
+            this.field.forEach(cell => {
+                cell.offsetX = 0;
+                cell.offsetY = 0;
+                cell.animationValue = cell.value
+                cell.isMerging = true;
+            });
         }
     }
 }

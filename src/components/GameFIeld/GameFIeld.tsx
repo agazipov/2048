@@ -8,7 +8,7 @@ interface FieldProps {
 }
 
 const GameField: React.FC<FieldProps> = ({ init }) => {
-    const [cells, setCells] = useState(init.field);      
+    const [cells, setCells] = useState(init.field);   
     
     useTick((delta) => {
         if (init.animationActivated) {
@@ -24,7 +24,7 @@ const GameField: React.FC<FieldProps> = ({ init }) => {
                     <React.Fragment key={cell.id}>
                         <Graphics draw={(g) => cell.draw(g)} />
                         <Text
-                            text={cell.value !== 0 ? cell.value.toString() : ''}
+                            text={cell.animationValue !== 0 ? cell.animationValue.toString() : ''}
                             anchor={0.5}
                             x={cell.drawText()[0]}
                             y={cell.drawText()[1]}
