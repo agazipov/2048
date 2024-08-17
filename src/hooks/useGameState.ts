@@ -8,7 +8,7 @@ export const useGameState = () => {
     const [field, setField] = useState(INITIALL_FIELD.field);
 
     const handleDirection = useCallback((direction: TDirection) => {
-        INITIALL_FIELD.trigger(direction);
+        INITIALL_FIELD.handleDirection(direction);
         setField([...INITIALL_FIELD.field]);
     }, []);
 

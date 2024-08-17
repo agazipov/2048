@@ -8,8 +8,8 @@ interface FieldProps {
 }
 
 const GameField: React.FC<FieldProps> = ({ init }) => {
-    const [cells, setCells] = useState(init.field);   
-
+    const [cells, setCells] = useState(init.field);      
+    
     useTick((delta) => {
         if (init.animationActivated) {
             init.animation(delta);
@@ -33,8 +33,6 @@ const GameField: React.FC<FieldProps> = ({ init }) => {
                                     align: 'center',
                                     fill: 'black',
                                     fontSize: 20,
-                                    letterSpacing: 20,
-                                    dropShadowColor: '#E72264',
                                 })
                             }
                         />

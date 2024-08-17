@@ -8,6 +8,7 @@ export class Field {
     columns: Cell[][];
     animationActivated: boolean;
     direction: TDirection;
+    speed: number = 3;
 
     constructor() {
         // this.field = mock;
@@ -37,8 +38,8 @@ export class Field {
             num2 = Math.floor(Math.random() * arr.length);
         } while (num1 === num2);
 
-        arr[num1].value = 2;
-        arr[num2].value = 2;
+        arr[0].value = 2;
+        arr[1].value = 2;
 
         return arr;
     }
@@ -55,99 +56,122 @@ export class Field {
         return columns;
     }
 
-    private shiftCells(arr: Cell[], direction: 'plus' | 'minus') {
-        const isPlus = direction === 'plus';
-        const start = isPlus ? 0 : arr.length - 1;
-        const end = isPlus ? arr.length : -1;
-        const step = isPlus ? 1 : -1;
-    
-        // Первый проход для объединения клеток
-        for (let i = start; i !== end; i += step) {
-            let next = i + step;
-          
-            if (!arr[next]) continue;
-            
-            if (arr[next].value === 0) {
-                arr[next].value = arr[i].value;
-                arr[i].value = 0;
-            } else if (arr[i].value === arr[next].value) {
-                arr[next].value *= 2;
-                arr[i].value = 0;
-            }
-        }
-        
-        // Второй проход для сдвига клеток
-        for (let i = start; i !== end; i += step) {
-            let next = i + step;
-            if (!arr[next]) continue;
-    
-            if (arr[next].value === 0) {
-                arr[next].value = arr[i].value;
-                arr[i].value = 0;
-            }
-        }
-
-        // Третий проход для сдвига клеток (в случае когда 0 в начале строки)
-        for (let i = start; i !== end; i += step) {
-            let next = i + step;
-            if (!arr[next]) continue;
-    
-            if (arr[next].value === 0) {
-                arr[next].value = arr[i].value;
-                arr[i].value = 0;
-            }
-        }
-    }
-
     private addRandomValues() {
         const emptyCells = this.field.filter(cell => cell.value === 0);
-        this.field.forEach(cell => cell.isActiv = false);
+        this.field.forEach(cell => cell.isNewCell = false);
         if (emptyCells.length > 0) {
             const randomIndex = Math.floor(Math.random() * emptyCells.length);
             const randomValue = Math.random() < 0.9 ? 2 : 4; // 90% вероятность 2, 10% вероятность 4
             emptyCells[randomIndex].value = randomValue;
-            emptyCells[randomIndex].isActiv = true;
+            emptyCells[randomIndex].isNewCell = true;
         }
     }
 
-    handleDirection(): Cell[] {
+    handleDirection(direction: TDirection) {
+        this.direction = direction;
         switch (this.direction) {
             case 'right':
-                this.rows.forEach(row => this.shiftCells(row, 'plus'));
+                this.rows.forEach(row => this.shiftLogic(row, this.direction));
                 break;
             case 'left':
-                this.rows.forEach(row => this.shiftCells(row, 'minus'));
+                this.rows.forEach(row => this.shiftLogic(row, this.direction));
                 break;
             case 'down':
-                this.columns.forEach(column => this.shiftCells(column, 'plus'));
+                this.columns.forEach(column => this.shiftLogic(column, this.direction));
                 break;
             case 'up':
-                this.columns.forEach(column => this.shiftCells(column, 'minus'));
+                this.columns.forEach(column => this.shiftLogic(column, this.direction));
                 break;
             default:
                 break;
         }
-        this.addRandomValues();
-        return this.field;
+        this.startAnimationField();
+        // this.addRandomValues();
     }
 
-    trigger(direction: TDirection) {
-        // нужен для запуска рендера usetick. работает как свич. при первом запуске активирует у клеток поле анимации
-        this.direction = direction;     
-        this.handleDirection();  
-        // !this.animationActivated && this.field.forEach(cell => cell.value !== 0 && cell.startAnimation());
-        // this.animationActivated = !this.animationActivated;
+
+    private shiftLogic(arr: Cell[], direction: TDirection) {       
+        const isPlus = direction === 'right' || direction === 'down';
+        const start = isPlus ? 0 : arr.length - 1;
+        const end = isPlus ? arr.length : -1;
+        const step = isPlus ? 1 : -1;
+
+        // Три цикла для обхода значений для поля из 4х клеток
+        // Первый проход для объединения клеток
+        // Объеденям клетки только на перввой итерации согласно логики игры
+        for (let i = start; i !== end; i += step) {
+            let next = i + step;
+
+            if (!arr[next] || arr[i].value === 0) continue;
+
+            if (arr[next].value === 0) {
+                arr[next].value = arr[i].value;
+                arr[i].value = 0;
+                arr[i].amplitudeX = arr[next].x;
+                arr[i].amplitudeY = arr[next].y;
+                arr[i].isAnimating = true;
+                console.log(`клетка ${arr[i].id} сместилась ${direction} с позиции ${arr[i].x} ${arr[i].y} на позицию ${arr[next].x} ${arr[next].y}`);
+            } else if (arr[i].value === arr[next].value) {
+                arr[next].value *= 2;
+                arr[i].value = 0;
+                arr[i].amplitudeX = arr[next].x;
+                arr[i].amplitudeY = arr[next].y;
+                arr[i].isAnimating = true;
+                console.log(`клетка ${arr[i].id} слилась`);
+            }
+        }
+
+        // Второй проход для сдвига клеток
+        for (let i = start; i !== end; i += step) {
+            let next = i + step;
+            if (!arr[next] || arr[i].value === 0) continue;
+
+            if (arr[next].value === 0) {
+                arr[next].value = arr[i].value;
+                arr[i].value = 0;
+                arr[i].amplitudeX = arr[next].x;
+                arr[i].amplitudeY = arr[next].y;
+                arr[i].isAnimating = true;
+                console.log(`клетка ${arr[i].id} сместилась  ${direction}`);
+            }
+        }
+
+        // Третий проход для сдвига клеток (когда в ряду 3 разных значения)
+        for (let i = start; i !== end; i += step) {
+            let next = i + step;
+            if (!arr[next] || arr[i].value === 0) continue;
+
+            if (arr[next].value === 0) {
+                arr[next].value = arr[i].value;
+                arr[i].value = 0;
+                arr[i].amplitudeX = arr[next].x;
+                arr[i].amplitudeY = arr[next].y;
+                arr[i].isAnimating = true;
+                console.log(`клетка ${arr[i].id} сместилась  ${direction}`);
+            }
+        }
+    }
+
+
+    startAnimationField() {
+        // нужен для запуска рендера usetick. при запуске активирует у клеток анимацию
+        if (this.animationActivated) return;
+        // this.direction = direction;
+        // !this.animationActivated && this.field.forEach(cell => cell.value !== 0 && cell.startAnimationCell());
+        this.animationActivated = true;
     }
 
     animation(delta: number) {
-        console.log('animation tick');
+        console.log('tick');
+        
         // вызываем анимацию для клеток
-        this.field.forEach(cell => cell.isAnimating && cell.cellAnimation(delta, this.direction));
+        // !здесь массив с клетками для анимации (в котором должны содераться данные о предстоящем изменении)
+        this.field.forEach(cell => cell.isAnimating && cell.cellAnimation(delta, this.direction, this.speed));
         // проверяем когда все клетки завершат анимацию
-        this.field.every(cell => !cell.isAnimating) && this.trigger(this.direction);
-        // после завершения анимации вызываем логику
-        if (!this.animationActivated) {
-            this.handleDirection();
+        if (this.field.every(cell => !cell.isAnimating)) {
+            this.animationActivated = false;
+            // возвращает клетки в дефолтное значение
+            this.field.forEach(cell => { cell.offsetX = 0; cell.offsetY = 0 });
         }
     }
 }
