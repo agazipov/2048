@@ -7,22 +7,24 @@ export type TDirection = 'right' | 'left' | 'up' | 'down' | null;
 // клеток поля и сортировка при сдвиге были-бы более просты в реализации анимации.
 export class Field {
     field: Cell[];
+    score: number;
     rows: Cell[][];
     columns: Cell[][];
     animationActivated: boolean; // триггер для запуска requestAnimationFrame или аналога 
     direction: TDirection; // указатель направления сдвига
     speed: number = 7; // скорость смещения клеток
     isMove: number; // флаг, указывающий на невозможность сделать ход в указаном напрвлении. проверка осуществляется для 4-х колонок или столбцов и если равна 4, то отменяет анмацию и генерацию нового поля.
-    score: number;
+    isGameOver: TDirection[] // массив с направлениями по которым не возмоно сделать ход
 
     constructor() {
         this.field = this.generateField();
+        this.score = 0;
         this.rows = this.splitIntoRows();
         this.columns = this.splitIntoColumns();
         this.animationActivated = false;
         this.direction = null;
         this.isMove = 0;
-        this.score = 0;
+        this.isGameOver = [];
     }
 
     private generateField(): Cell[] {
@@ -46,16 +48,16 @@ export class Field {
 
         // arr[num1].value = 2;
         // arr[num1].animationValue = 2;
-        // arr[num2].value = 8;
-        // arr[num2].animationValue = 8;
-        arr[0].value = 2;
-        arr[0].animationValue = 2;
-        arr[1].value = 8;
-        arr[1].animationValue = 8;
-        arr[2].value = 4;
-        arr[2].animationValue = 4;
-        arr[3].value = 4;
-        arr[3].animationValue = 4;
+        // arr[num2].value = 2;
+        // arr[num2].animationValue = 2;
+        arr[0].value = 8;
+        arr[0].animationValue = 8;
+        // arr[1].value = 8;
+        // arr[1].animationValue = 8;
+        arr[2].value = 8;
+        arr[2].animationValue = 8;
+        arr[3].value = 8;
+        arr[3].animationValue = 8;
 
         return arr;
     }
@@ -82,7 +84,6 @@ export class Field {
     }
 
     handleDirection(direction: TDirection) {
-        if (this.field.every(cell => cell.value !== 0)) console.log('все пол заполнены');
         this.isMove = 0;
         this.direction = direction;
         switch (this.direction) {
@@ -102,15 +103,22 @@ export class Field {
                 break;
         }
 
-        if (this.score === 2048) {
-            this.startAnimationField();
-            this.isWinner();
+        if (this.isGameOver.length === 4) {
+            this.endGame('Нельзя сделать ход');
             return;
         }
-        if (this.isMove !== 4) {
-            this.startAnimationField();
-            this.addRandomValues();
+        if (this.isMove === 4) {
+            if (!this.isGameOver.includes(this.direction)) {
+                this.isGameOver.push(this.direction);
+            }
+            return;
         }
+        this.startAnimationField();
+        if (this.score === 2048) {
+            this.endGame('Уровень пройден');
+            return;
+        }
+        this.addRandomValues();
     }
 
 
@@ -141,19 +149,36 @@ export class Field {
                 if (arrayOfСhangingСells[indexOfCellCanged]) {
                     arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
                 }
-            } else if (arr[i].value === arr[next].value && arr[i].isMerging) {
-                arr[next].value *= 2;
-                arr[next].animationValue = 0; // !удалем отображение клетки при объединении
-                this.score += arr[next].value;
-                arr[i].value = 0;
-                if (isChangeCell) {
-                    isChangeCell = false;
-                    indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+            } else if (arr[i].value === arr[next].value && arr[i].isMerging && arr[i].animationValue !== 0) {
+                if (arr[next + step]?.value && arr[next].value === arr[next + step].value) {
+                    arr[next + step].value *= 2;
+                    arr[next + step].animationValue = 0; // !удалем отображение клетки при объединении
+                    this.score += arr[next + 1].value;
+                    arr[i].value = 0;
+                    if (isChangeCell) {
+                        isChangeCell = false;
+                        arrayOfСhangingСells.push(arr[i]);
+                        indexOfCellCanged = arrayOfСhangingСells.push(arr[next]) - 1;
+                    }
+                    if (arrayOfСhangingСells[indexOfCellCanged]) {
+                        arrayOfСhangingСells[indexOfCellCanged - 1].amplitude = ++amplitudeOfChange;
+                        arrayOfСhangingСells[indexOfCellCanged].amplitude = amplitudeOfChange;
+                    }
+                    arr[next + 1].isMerging = false; // объеденяем только раз за ход
+                } else {
+                    arr[next].value *= 2;
+                    arr[next].animationValue = 0; // !удалем отображение клетки при объединении
+                    this.score += arr[next].value;
+                    arr[i].value = 0;
+                    if (isChangeCell) {
+                        isChangeCell = false;
+                        indexOfCellCanged = arrayOfСhangingСells.push(arr[i]) - 1;
+                    }
+                    if (arrayOfСhangingСells[indexOfCellCanged]) {
+                        arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
+                    }
+                    arr[next].isMerging = false; // объеденяем только раз за ход
                 }
-                if (arrayOfСhangingСells[indexOfCellCanged]) {
-                    arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
-                }
-                arr[next].isMerging = false; // объеденяем только раз за ход
             } else {
                 // вышедший из итрецаии перемещения объект из-за различных значений с соседним
                 isChangeCell = true;
@@ -210,8 +235,8 @@ export class Field {
                 amplitudeOfChange = 0;
             }
         }
-        arrayOfСhangingСells.forEach(cell => cell.isAnimating = true); // анимируются только измененные клетки     
-        arrayOfСhangingСells.length === 0 && ++this.isMove; // добавляем 1 к счетку возможности хода
+        arrayOfСhangingСells.forEach(cell => cell.isAnimating = true); // анимируются только измененные клетки    
+        arrayOfСhangingСells.length === 0 ? ++this.isMove : this.isGameOver.length = 0; // если изменяемых клеток не было, добавляем 1 к счетку возможности хода иначе исключаем из масива конца игры невалидное направление 
     }
 
     private startAnimationField() {
@@ -237,9 +262,9 @@ export class Field {
         }
     }
 
-    private async isWinner() {
+    private async endGame(message: string) {
         let promise = new Promise((resolve) => {
-            setTimeout(() => resolve("Уровень пройден"), 1000)
+            setTimeout(() => resolve(message), 1000)
         });
         let result = await promise;
 

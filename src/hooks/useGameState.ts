@@ -1,28 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Field, TDirection } from "../utils/2048/field";
+import { useEffect } from "react";
+import { Field } from "../utils/2048/field";
 import { Settings } from "../utils/2048/settings";
+import { debounce } from 'lodash';
 
 const INITIALL_FIELD = new Field();
 const SETTINGS = new Settings();
 
 export const useGameState = () => {
-    const [field, setField] = useState(INITIALL_FIELD.field);
-
-    const handleDirection = useCallback((direction: TDirection) => {
-        INITIALL_FIELD.handleDirection(direction);
-        setField([...INITIALL_FIELD.field]);
-    }, []);
-    
     useEffect(() => {
         let startCursorX = 0;
         let startCursorY = 0;
 
-        const handleMouseDown = (event) => {           
+        const handleMouseDown = (event: { clientX: number; clientY: number; }) => {
             startCursorX = event.clientX;
             startCursorY = event.clientY;
         };
 
-        const handleMouseUp =(event) => {           
+        const handleMouseUp = debounce((event: { clientX: number; clientY: number; }) => {            
             const deltaX = event.clientX - startCursorX;
             const deltaY = event.clientY - startCursorY;
 
@@ -41,7 +35,7 @@ export const useGameState = () => {
                     INITIALL_FIELD.handleDirection('up');
                 }
             }
-        };
+        }, 900, { leading: true, trailing: false });
 
         window.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mouseup', handleMouseUp);
