@@ -2,21 +2,27 @@ import { Cell } from "./cell";
 
 export type TDirection = 'right' | 'left' | 'up' | 'down' | null;
 
+// Выбранная мной система хранения данных, в которой при смещении меняется не порядок в массиве, а значение клетки
+// оказлась не так проста при реализации анимации. Кажется, что испольование многомерного массива для хранения 
+// клеток поля и сортировка при сдвиге были-бы более просты в реализации анимации.
 export class Field {
     field: Cell[];
     rows: Cell[][];
     columns: Cell[][];
-    animationActivated: boolean;
-    direction: TDirection;
-    speed: number = 7;
+    animationActivated: boolean; // триггер для запуска requestAnimationFrame или аналога 
+    direction: TDirection; // указатель направления сдвига
+    speed: number = 7; // скорость смещения клеток
+    isMove: number; // флаг, указывающий на невозможность сделать ход в указаном напрвлении. проверка осуществляется для 4-х колонок или столбцов и если равна 4, то отменяет анмацию и генерацию нового поля.
+    score: number;
 
     constructor() {
-        // this.field = mock;
         this.field = this.generateField();
         this.rows = this.splitIntoRows();
         this.columns = this.splitIntoColumns();
         this.animationActivated = false;
         this.direction = null;
+        this.isMove = 0;
+        this.score = 0;
     }
 
     private generateField(): Cell[] {
@@ -38,18 +44,18 @@ export class Field {
             num2 = Math.floor(Math.random() * arr.length);
         } while (num1 === num2);
 
-        arr[num1].value = 2;
-        arr[num1].animationValue = 2;
-        arr[num2].value = 8;
-        arr[num2].animationValue = 8;
-        // arr[0].value = 2;
-        // arr[0].animationValue = 2;
-        // arr[1].value = 2;
-        // arr[1].animationValue = 2;
-        // arr[2].value = 4;
-        // arr[2].animationValue = 4;
-        // arr[3].value = 4;
-        // arr[3].animationValue = 4;
+        // arr[num1].value = 2;
+        // arr[num1].animationValue = 2;
+        // arr[num2].value = 8;
+        // arr[num2].animationValue = 8;
+        arr[0].value = 2;
+        arr[0].animationValue = 2;
+        arr[1].value = 8;
+        arr[1].animationValue = 8;
+        arr[2].value = 4;
+        arr[2].animationValue = 4;
+        arr[3].value = 4;
+        arr[3].animationValue = 4;
 
         return arr;
     }
@@ -76,6 +82,8 @@ export class Field {
     }
 
     handleDirection(direction: TDirection) {
+        if (this.field.every(cell => cell.value !== 0)) console.log('все пол заполнены');
+        this.isMove = 0;
         this.direction = direction;
         switch (this.direction) {
             case 'right':
@@ -93,8 +101,16 @@ export class Field {
             default:
                 break;
         }
-        this.startAnimationField();
-        this.addRandomValues();
+
+        if (this.score === 2048) {
+            this.startAnimationField();
+            this.isWinner();
+            return;
+        }
+        if (this.isMove !== 4) {
+            this.startAnimationField();
+            this.addRandomValues();
+        }
     }
 
 
@@ -105,12 +121,11 @@ export class Field {
         const step = isPlus ? 1 : -1;
 
         // Три цикла для обхода значений для поля из 4х клеток
-        // Первый проход для объединения клеток
-        // Объеденяем клетки только на первой итерации согласно
-        let arrayOfСhangingСells: Cell[] = [];
-        let amplitudeOfChange = 0;
-        let indexOfCellCanged = 0;
-        let isChangeCell = true;
+        let isChangeCell = true; // указатель на существование клетки для изменения
+        const arrayOfСhangingСells: Cell[] = []; // массив ссылок на клетки, которые изменяются при сдвиге
+        let indexOfCellCanged = 0; // индекс клетки к которой применяется изменение
+        let amplitudeOfChange = 0; // амплитуда изменения координаты клетки
+        // Первый проход для сдвига и объединения клеток
         for (let i = start; i !== end; i += step) {
             let next = i + step;
 
@@ -128,6 +143,8 @@ export class Field {
                 }
             } else if (arr[i].value === arr[next].value && arr[i].isMerging) {
                 arr[next].value *= 2;
+                arr[next].animationValue = 0; // !удалем отображение клетки при объединении
+                this.score += arr[next].value;
                 arr[i].value = 0;
                 if (isChangeCell) {
                     isChangeCell = false;
@@ -135,7 +152,8 @@ export class Field {
                 }
                 if (arrayOfСhangingСells[indexOfCellCanged]) {
                     arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
-                } arr[next].isMerging = false; // мержим только раз за ход
+                }
+                arr[next].isMerging = false; // объеденяем только раз за ход
             } else {
                 // вышедший из итрецаии перемещения объект из-за различных значений с соседним
                 isChangeCell = true;
@@ -164,7 +182,6 @@ export class Field {
                     arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
                 }
             } else {
-                // вышедший из итрецаии слияниия объект из-за различных значений с соседним
                 isChangeCell = true;
                 ++indexOfCellCanged;
                 amplitudeOfChange = 0;
@@ -172,7 +189,7 @@ export class Field {
         }
         indexOfCellCanged = 0;
 
-        // Третий проход для сдвига клеток (когда в ряду 3 разных значения)
+        // Третий проход для сдвига клеток
         for (let i = start; i !== end; i += step) {
             let next = i + step;
             if (!arr[next] || arr[i].value === 0) continue;
@@ -188,16 +205,16 @@ export class Field {
                     arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
                 }
             } else {
-                // вышедший из итрецаии слияниия объект из-за различных значений с соседним
                 isChangeCell = true;
                 ++indexOfCellCanged;
                 amplitudeOfChange = 0;
             }
         }
-        arrayOfСhangingСells.forEach(cell => cell.isAnimating = true)
+        arrayOfСhangingСells.forEach(cell => cell.isAnimating = true); // анимируются только измененные клетки     
+        arrayOfСhangingСells.length === 0 && ++this.isMove; // добавляем 1 к счетку возможности хода
     }
 
-    startAnimationField() {
+    private startAnimationField() {
         // нужен для запуска рендера usetick. при запуске активирует у клеток анимацию
         if (this.animationActivated) return;
         this.animationActivated = true;
@@ -205,12 +222,12 @@ export class Field {
 
     animation(delta: number) {
         // вызываем анимацию для клеток
-        // !здесь массив с клетками для анимации (в котором должны содераться данные о предстоящем изменении)
+        // !здесь массив с клетками для анимации (в котором должны содержаться данные о предстоящем изменении)
         this.field.forEach(cell => cell.isAnimating && cell.cellAnimation(delta, this.direction, this.speed));
         // проверяем когда все клетки завершат анимацию
         if (this.field.every(cell => !cell.isAnimating)) {
-            this.animationActivated = false;
             // возвращает клетки в дефолтное значение
+            this.animationActivated = false;
             this.field.forEach(cell => {
                 cell.offsetX = 0;
                 cell.offsetY = 0;
@@ -218,5 +235,26 @@ export class Field {
                 cell.isMerging = true;
             });
         }
+    }
+
+    private async isWinner() {
+        let promise = new Promise((resolve) => {
+            setTimeout(() => resolve("Уровень пройден"), 1000)
+        });
+        let result = await promise;
+
+        alert(result);
+        this.refreshGame();
+    }
+
+    private refreshGame() {
+        this.field = this.generateField();
+        this.rows = this.splitIntoRows();
+        this.columns = this.splitIntoColumns();
+        this.animationActivated = false;
+        this.direction = null;
+        this.isMove = 0;
+        this.score = 0;
+        this.startAnimationField(); // тик для отрисовки нового поля
     }
 }

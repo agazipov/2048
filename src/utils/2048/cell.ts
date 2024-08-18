@@ -49,13 +49,13 @@ export class Cell {
                 case 2048: g.beginFill(0xf3bd29, 1); break;
                 default: break;
             }
-            g.drawRoundedRect(this.x * 100 + 5 + this.offsetX, this.y * 100 + 5 + this.offsetY, 90, 90, 10);
+            g.drawRoundedRect(this.x * 100 + 35 + this.offsetX, this.y * 100 + 115 + this.offsetY, 90, 90, 10);
             g.endFill();
         }
     }
 
     drawText() {
-        return [this.x * 100 + 50 + this.offsetX, this.y * 100 + 50 + this.offsetY,]
+        return [this.x * 100 + 80 + this.offsetX, this.y * 100 + 160 + this.offsetY,]
     }
 
     startAnimationCell() {

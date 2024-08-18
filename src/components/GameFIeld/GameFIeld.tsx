@@ -2,14 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { TextStyle } from 'pixi.js';
 import { Text, Graphics, useTick, Container } from '@pixi/react';
 import { Field } from '../../utils/2048/field';
+import { Settings } from '../../utils/2048/settings';
+import Score from '../Score/Score';
 
 interface FieldProps {
     init: Field;
+    settings: Settings
 }
 
-const GameField: React.FC<FieldProps> = ({ init }) => {
-    const [cells, setCells] = useState(init.field);   
-    
+const GameField: React.FC<FieldProps> = ({ init, settings }) => {
+    const [cells, setCells] = useState(init.field);
+
     useTick((delta) => {
         if (init.animationActivated) {
             init.animation(delta);
@@ -19,6 +22,7 @@ const GameField: React.FC<FieldProps> = ({ init }) => {
 
     return (
         <Container>
+            <Score init={init} settings={settings} />
             {cells.map(cell => {
                 return (
                     <React.Fragment key={cell.id}>
