@@ -46,19 +46,10 @@ export class Field {
             num2 = Math.floor(Math.random() * arr.length);
         } while (num1 === num2);
 
-        // arr[num1].value = 2;
-        // arr[num1].animationValue = 2;
-        // arr[num2].value = 2;
-        // arr[num2].animationValue = 2;
-        arr[0].value = 8;
-        arr[0].animationValue = 8;
-        // arr[1].value = 8;
-        // arr[1].animationValue = 8;
-        arr[2].value = 8;
-        arr[2].animationValue = 8;
-        arr[3].value = 8;
-        arr[3].animationValue = 8;
-
+        arr[num1].value = 2;
+        arr[num1].animationValue = 2;
+        arr[num2].value = 2;
+        arr[num2].animationValue = 2;
         return arr;
     }
 
@@ -139,7 +130,7 @@ export class Field {
 
             if (!arr[next] || arr[i].value === 0) continue;
 
-            if (arr[next].value === 0) {
+            if (arr[next].value === 0) {               
                 arr[next].value = arr[i].value;
                 arr[i].value = 0;
                 if (isChangeCell) {
@@ -149,25 +140,28 @@ export class Field {
                 if (arrayOfСhangingСells[indexOfCellCanged]) {
                     arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
                 }
-            } else if (arr[i].value === arr[next].value && arr[i].isMerging && arr[i].animationValue !== 0) {
-                if (arr[next + step]?.value && arr[next].value === arr[next + step].value) {
+            } else if (arr[i].value === arr[next].value && arr[i].isMerging ) {
+                if (arr[next + step]?.value && arr[next].value === arr[next + step].value  && arr[0].value !== arr[arr.length -1]?.value) {                    
                     arr[next + step].value *= 2;
                     arr[next + step].animationValue = 0; // !удалем отображение клетки при объединении
                     this.score += arr[next + 1].value;
                     arr[i].value = 0;
-                    if (isChangeCell) {
+                    if (isChangeCell) {                       
                         isChangeCell = false;
                         arrayOfСhangingСells.push(arr[i]);
                         indexOfCellCanged = arrayOfСhangingСells.push(arr[next]) - 1;
                     }
-                    if (arrayOfСhangingСells[indexOfCellCanged]) {
-                        arrayOfСhangingСells[indexOfCellCanged - 1].amplitude = ++amplitudeOfChange;
-                        arrayOfСhangingСells[indexOfCellCanged].amplitude = amplitudeOfChange;
+                    let count = ++amplitudeOfChange;
+                    if (arrayOfСhangingСells[indexOfCellCanged - 1]) {
+                        arrayOfСhangingСells[indexOfCellCanged - 1].amplitude = count;
                     }
-                    arr[next + 1].isMerging = false; // объеденяем только раз за ход
+                    if (arrayOfСhangingСells[indexOfCellCanged]) {
+                        arrayOfСhangingСells[indexOfCellCanged].amplitude = count;
+                    }
+                    arr[next + 1].isMerging = false; // объеденяем клетку только раз за ход
                 } else {
                     arr[next].value *= 2;
-                    arr[next].animationValue = 0; // !удалем отображение клетки при объединении
+                    arr[next].animationValue = 0;
                     this.score += arr[next].value;
                     arr[i].value = 0;
                     if (isChangeCell) {
@@ -177,7 +171,7 @@ export class Field {
                     if (arrayOfСhangingСells[indexOfCellCanged]) {
                         arrayOfСhangingСells[indexOfCellCanged].amplitude = ++amplitudeOfChange;
                     }
-                    arr[next].isMerging = false; // объеденяем только раз за ход
+                    arr[next].isMerging = false; 
                 }
             } else {
                 // вышедший из итрецаии перемещения объект из-за различных значений с соседним

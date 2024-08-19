@@ -8,17 +8,17 @@ const SETTINGS = new Settings();
 
 export const useGameState = () => {
     useEffect(() => {
-        let startCursorX = 0;
-        let startCursorY = 0;
+        let startX = 0;
+        let startY = 0;
 
-        const handleMouseDown = (event: { clientX: number; clientY: number; }) => {
-            startCursorX = event.clientX;
-            startCursorY = event.clientY;
+        const handleStart = (clientX: number, clientY: number) => {
+            startX = clientX;
+            startY = clientY;
         };
 
-        const handleMouseUp = debounce((event: { clientX: number; clientY: number; }) => {            
-            const deltaX = event.clientX - startCursorX;
-            const deltaY = event.clientY - startCursorY;
+        const handleEnd = debounce((clientX: number, clientY: number) => {            
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
 
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
                 // Большее движение по оси X
@@ -37,12 +37,40 @@ export const useGameState = () => {
             }
         }, 900, { leading: true, trailing: false });
 
-        window.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('mouseup', handleMouseUp);
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+        const handleMouseDown = (event: { clientX: number; clientY: number; }) => {
+            handleStart(event.clientX, event.clientY);
+        };
+
+        const handleMouseUp = (event: { clientX: any; clientY: any; }) => {
+            handleEnd(event.clientX, event.clientY);
+        };
+
+        const handleTouchStart = (event) => {
+            handleStart(event.touches[0].clientX, event.touches[0].clientY);
+        };
+
+        const handleTouchEnd = (event) => {
+            handleEnd(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+        };
+
+        if (isMobile) {
+            window.addEventListener('touchstart', handleTouchStart);
+            window.addEventListener('touchend', handleTouchEnd);
+        } else {
+            window.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
 
         return () => {
-            window.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('mouseup', handleMouseUp);
+            if (isMobile) {
+                window.removeEventListener('touchstart', handleTouchStart);
+                window.removeEventListener('touchend', handleTouchEnd);
+            } else {
+                window.removeEventListener('mousedown', handleMouseDown);
+                window.removeEventListener('mouseup', handleMouseUp);
+            }
         };
     }, []);
 
